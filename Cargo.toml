@@ -1,0 +1,36 @@
+[package]
+authors = ["i@k4yt3x.com"]
+categories = ["command-line-utilities"]
+description = "A Telegram group entry CAPTCHA bot"
+edition = "2021"
+homepage = "https://github.com/k4yt3x/aufseher"
+keywords = ["telegram"]
+license = "GPL-2.0-only"
+name = "aufseher"
+readme = "README.md"
+repository = "https://github.com/k4yt3x/aufseher"
+version = "1.0.0"
+
+[[bin]]
+name = "aufseher"
+path = "src/main.rs"
+
+[profile.dev]
+opt-level = 3
+
+[profile.release]
+strip = "symbols"
+
+[dependencies]
+anyhow = "1.0"
+chrono = "0.4"
+clap = { version = "4.0", features = ["derive", "env"] }
+regex = "1.9"
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
+slog = "2.7"
+slog-term = "2.9"
+teloxide = { version = "0.12", features = ["macros", "throttle"] }
+tokio = { version = "1.23", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"

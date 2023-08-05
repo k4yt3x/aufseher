@@ -1,0 +1,7 @@
+spam_name_patterns:
+  - "^[0-9]{10}$"
+  - "test"
+tests:
+  usernames:
+    - "1234567890"
+    - "test username"
