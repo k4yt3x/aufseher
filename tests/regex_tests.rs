@@ -12,7 +12,7 @@ mod tests {
 
     #[derive(Debug, Deserialize)]
     struct AufseherConfig {
-        spam_name_patterns: Vec<String>,
+        spam_name_regexes: Vec<String>,
         tests: Tests,
     }
 
@@ -25,7 +25,7 @@ mod tests {
 
         for s in config.tests.usernames {
             let mut matched = false;
-            for pattern in &config.spam_name_patterns {
+            for pattern in &config.spam_name_regexes {
                 let re = Regex::new(pattern).unwrap();
                 if re.is_match(&s) {
                     matched = true;
