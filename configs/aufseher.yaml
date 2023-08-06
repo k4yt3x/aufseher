@@ -1,7 +1,13 @@
-spam_name_regexes:
-  - "^[0-9]{10}$"
+name_regexes:
+  - "^[0-9]{10}a?$"
+  - "test"
+message_regexes:
+  - "^[0-9]{10}a?$"
   - "test"
 tests:
   usernames:
-    - "1234567890"
+    - "1234567890a"
     - "test username"
+  messages:
+    - "1234567890a"
+    - "test message"

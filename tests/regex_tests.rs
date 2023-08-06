@@ -8,11 +8,13 @@ mod tests {
     #[derive(Debug, Deserialize)]
     struct Tests {
         usernames: Vec<String>,
+        messages: Vec<String>,
     }
 
     #[derive(Debug, Deserialize)]
     struct AufseherConfig {
-        spam_name_regexes: Vec<String>,
+        name_regexes: Vec<String>,
+        message_regexes: Vec<String>,
         tests: Tests,
     }
 
@@ -25,7 +27,24 @@ mod tests {
 
         for s in config.tests.usernames {
             let mut matched = false;
-            for pattern in &config.spam_name_regexes {
+            for pattern in &config.name_regexes {
+                let re = Regex::new(pattern).unwrap();
+                if re.is_match(&s) {
+                    matched = true;
+                    println!("'{}' matched '{}'", s, pattern);
+                    break;
+                }
+            }
+            assert!(
+                matched,
+                "String '{}' did not match any of the provided patterns",
+                s
+            );
+        }
+
+        for s in config.tests.messages {
+            let mut matched = false;
+            for pattern in &config.message_regexes {
                 let re = Regex::new(pattern).unwrap();
                 if re.is_match(&s) {
                     matched = true;
