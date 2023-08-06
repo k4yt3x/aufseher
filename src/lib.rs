@@ -16,7 +16,6 @@
  */
 
 use anyhow::Result;
-use chrono::Utc;
 use regex::Regex;
 use serde::Deserialize;
 use teloxide::{
@@ -81,7 +80,6 @@ pub async fn handle(
                             regex.as_str()
                         );
                         bot.ban_chat_member(message.chat.id.clone(), member.id)
-                            .until_date(Utc::now())
                             .revoke_messages(true)
                             .send()
                             .await?;
@@ -119,7 +117,6 @@ pub async fn handle(
                                 .send()
                                 .await?;
                             bot.ban_chat_member(message.chat.id.clone(), user.id)
-                                .until_date(Utc::now())
                                 .revoke_messages(true)
                                 .send()
                                 .await?;
