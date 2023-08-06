@@ -1,0 +1,12 @@
+[Unit]
+Description=Aufseher
+Requires=network.target
+
+[Service]
+Type=simple
+Restart=on-failure
+User=nobody
+ExecStart=/usr/local/bin/aufseher -c /etc/aufseher.yaml
+
+[Install]
+WantedBy=multi-user.target
