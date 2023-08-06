@@ -79,6 +79,9 @@ pub async fn handle(
                             member.full_name(),
                             regex.as_str()
                         );
+                        bot.delete_message(message.chat.id.clone(), message.id.clone())
+                            .send()
+                            .await?;
                         bot.ban_chat_member(message.chat.id.clone(), member.id)
                             .revoke_messages(true)
                             .send()
