@@ -1,26 +1,9 @@
-/*
- * Copyright (C) 2023 K4YT3X.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; only version 2
- * of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- */
-
 use std::{fs, path::PathBuf, process};
 
 use anyhow::Result;
 use aufseher::{run, AufseherConfig, Config};
 use clap::Parser;
-use tracing::Level;
+use tracing::{error, Level};
 use tracing_subscriber;
 
 #[derive(Parser)]
@@ -31,7 +14,7 @@ struct Args {
     token: String,
 
     /// Path to config file
-    #[arg(short = 'c', long, default_value = "configs/aufseher.yaml")]
+    #[arg(short = 'c', long, default_value = "/etc/aufseher.yaml")]
     config_file: PathBuf,
 }
 
@@ -47,18 +30,17 @@ fn parse() -> Result<Config> {
 
 #[tokio::main]
 async fn main() {
-    // Setup tracing.
     tracing_subscriber::fmt().with_max_level(Level::INFO).init();
 
     match parse() {
-        Err(e) => {
-            eprintln!("Program initialization error: {}", e);
+        Err(error) => {
+            error!("Program initialization error: {}", error);
             process::exit(1);
         }
         Ok(config) => process::exit(match run(config).await {
             Ok(_) => 0,
-            Err(e) => {
-                eprintln!("Error: {}", e);
+            Err(error) => {
+                error!("{}", error);
                 1
             }
         }),
