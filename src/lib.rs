@@ -80,7 +80,7 @@ pub async fn handle(
                             member.full_name(),
                             regex.as_str()
                         );
-                        bot.kick_chat_member(message.chat.id.clone(), member.id)
+                        bot.ban_chat_member(message.chat.id.clone(), member.id)
                             .until_date(Utc::now())
                             .revoke_messages(true)
                             .send()
@@ -115,7 +115,10 @@ pub async fn handle(
                                 media_text.text,
                                 regex.as_str()
                             );
-                            bot.kick_chat_member(message.chat.id.clone(), user.id)
+                            bot.delete_message(message.chat.id.clone(), message.id.clone())
+                                .send()
+                                .await?;
+                            bot.ban_chat_member(message.chat.id.clone(), user.id)
                                 .until_date(Utc::now())
                                 .revoke_messages(true)
                                 .send()
