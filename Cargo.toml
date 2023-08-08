@@ -1,7 +1,7 @@
 [package]
 authors = ["i@k4yt3x.com"]
 categories = ["command-line-utilities"]
-description = "A Telegram group entry CAPTCHA bot"
+description = "A simple regex-based Telegram anti-spam bot"
 edition = "2021"
 homepage = "https://github.com/k4yt3x/aufseher"
 keywords = ["telegram"]
@@ -9,7 +9,7 @@ license = "GPL-2.0-only"
 name = "aufseher"
 readme = "README.md"
 repository = "https://github.com/k4yt3x/aufseher"
-version = "1.1.0"
+version = "1.2.0"
 
 [[bin]]
 name = "aufseher"

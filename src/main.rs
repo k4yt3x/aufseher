@@ -1,7 +1,7 @@
-use std::{fs, path::PathBuf, process};
+use std::{path::PathBuf, process};
 
 use anyhow::Result;
-use aufseher::{run, AufseherConfig, Config};
+use aufseher::{run, Config};
 use clap::Parser;
 use tracing::{error, Level};
 use tracing_subscriber;
@@ -20,12 +20,7 @@ struct Args {
 
 fn parse() -> Result<Config> {
     let args = Args::parse();
-
-    // Read config file
-    let file_contents = fs::read_to_string(args.config_file)?;
-    let regex_config: AufseherConfig = serde_yaml::from_str(&file_contents)?;
-
-    Ok(Config::new(args.token, regex_config))
+    Ok(Config::new(args.token, args.config_file))
 }
 
 #[tokio::main]

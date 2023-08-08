@@ -1,11 +1,12 @@
+use std::{fs, path::PathBuf};
+
 use anyhow::Result;
 use regex::Regex;
 use serde::Deserialize;
 use teloxide::{
-    adaptors::throttle::{Limits, Throttle},
     dispatching::UpdateFilterExt,
     prelude::*,
-    requests::{Request, RequesterExt},
+    requests::Request,
     types::{MediaKind, MessageKind, Update, UpdateKind},
 };
 use tracing::{error, info, warn};
@@ -15,14 +16,14 @@ pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 #[derive(Clone)]
 pub struct Config {
     token: String,
-    regex_config: AufseherConfig,
+    config_file: PathBuf,
 }
 
 impl Config {
-    pub fn new(token: String, regex_config: AufseherConfig) -> Config {
+    pub fn new(token: String, config_file: PathBuf) -> Config {
         Config {
             token,
-            regex_config,
+            config_file,
         }
     }
 }
@@ -34,7 +35,7 @@ pub struct AufseherConfig {
 }
 
 pub async fn handle(
-    bot: Throttle<Bot>,
+    bot: Bot,
     update: Update,
     name_regexes: Vec<Regex>,
     message_regexes: Vec<Regex>,
@@ -124,7 +125,7 @@ pub async fn handle(
 }
 
 async fn handle_wrapper(
-    bot: Throttle<Bot>,
+    bot: Bot,
     update: Update,
     name_regexes: Vec<Regex>,
     message_regexes: Vec<Regex>,
@@ -139,11 +140,15 @@ async fn handle_wrapper(
 pub async fn run(config: Config) -> Result<()> {
     info!("Aufseher {version} initializing", version = VERSION);
 
-    let bot = Bot::new(&config.token).throttle(Limits::default());
+    // initialize the bot with token
+    let bot = Bot::new(&config.token);
 
+    let file_contents = fs::read_to_string(config.config_file)?;
+    let regex_config: AufseherConfig = serde_yaml::from_str(&file_contents)?;
+
+    // load user name regexes
     let name_regexes: Vec<Regex> =
-        config
-            .regex_config
+        regex_config
             .name_regexes
             .iter()
             .try_fold(Vec::new(), |mut acc, r| {
@@ -151,9 +156,9 @@ pub async fn run(config: Config) -> Result<()> {
                 Ok::<_, regex::Error>(acc)
             })?;
 
+    // load message regexes
     let message_regexes: Vec<Regex> =
-        config
-            .regex_config
+        regex_config
             .message_regexes
             .iter()
             .try_fold(Vec::new(), |mut acc, r| {
@@ -161,14 +166,15 @@ pub async fn run(config: Config) -> Result<()> {
                 Ok::<_, regex::Error>(acc)
             })?;
 
+    // initialize the dispatcher
     let handler = dptree::entry().branch(Update::filter_message().endpoint({
         move |bot, update| {
             handle_wrapper(bot, update, name_regexes.clone(), message_regexes.clone())
         }
     }));
 
+    // start the dispatcher
     info!("Initialization complete, starting to handle updates");
-
     Dispatcher::builder(bot, handler)
         .enable_ctrlc_handler()
         .build()
