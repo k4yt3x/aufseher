@@ -5,6 +5,7 @@ use regex::Regex;
 use serde::Deserialize;
 use teloxide::{
     dispatching::UpdateFilterExt,
+    payloads::SendMessageSetters,
     prelude::*,
     requests::Request,
     types::{MediaKind, MessageKind, Update, UpdateKind},
@@ -107,6 +108,17 @@ pub async fn handle(
                                 .revoke_messages(true)
                                 .send()
                                 .await?;
+                            bot.send_message(
+                                message.chat.id.clone(),
+                                format!(
+                                    "User [{} \\({}\\)](tg://user?id\\={}) has been banned\\.",
+                                    user.full_name(),
+                                    user.id,
+                                    user.id
+                                ),
+                            )
+                            .parse_mode(teloxide::types::ParseMode::MarkdownV2)
+                            .await?;
                             warn!(
                                 "User '{}' ({}) has been banned from '{}' ({})",
                                 user.full_name(),
