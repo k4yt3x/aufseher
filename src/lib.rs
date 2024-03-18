@@ -7,8 +7,7 @@ use teloxide::{
     dispatching::UpdateFilterExt,
     payloads::SendMessageSetters,
     prelude::*,
-    requests::Request,
-    types::{MediaKind, MessageKind, Update, UpdateKind},
+    types::{MediaKind, MessageKind, UpdateKind},
 };
 use tracing::{error, info, warn};
 

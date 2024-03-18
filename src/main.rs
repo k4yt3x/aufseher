@@ -4,7 +4,6 @@ use anyhow::Result;
 use aufseher::{run, Config};
 use clap::Parser;
 use tracing::{error, Level};
-use tracing_subscriber;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
