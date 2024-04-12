@@ -1,7 +1,7 @@
 use std::{fs, path::PathBuf};
 
 use anyhow::Result;
-use regex::Regex;
+use fancy_regex::Regex;
 use serde::Deserialize;
 use teloxide::{
     dispatching::UpdateFilterExt,
@@ -57,7 +57,7 @@ pub async fn handle(
                     &message.chat.id
                 );
                 for regex in &name_regexes {
-                    if regex.is_match(&member.full_name()) {
+                    if regex.is_match(&member.full_name())? {
                         info!(
                             "Username '{}' maches regex '{}'",
                             member.full_name(),
@@ -94,7 +94,7 @@ pub async fn handle(
                         &message.chat.id
                     );
                     for regex in &message_regexes {
-                        if regex.is_match(&media_text.text) {
+                        if regex.is_match(&media_text.text)? {
                             info!(
                                 "Message text '{}' maches regex '{}'",
                                 media_text.text,
@@ -164,7 +164,7 @@ pub async fn run(config: Config) -> Result<()> {
             .iter()
             .try_fold(Vec::new(), |mut acc, r| {
                 acc.push(Regex::new(r)?);
-                Ok::<_, regex::Error>(acc)
+                Ok::<_, fancy_regex::Error>(acc)
             })?;
 
     // load message regexes
@@ -174,7 +174,7 @@ pub async fn run(config: Config) -> Result<()> {
             .iter()
             .try_fold(Vec::new(), |mut acc, r| {
                 acc.push(Regex::new(r)?);
-                Ok::<_, regex::Error>(acc)
+                Ok::<_, fancy_regex::Error>(acc)
             })?;
 
     // initialize the dispatcher

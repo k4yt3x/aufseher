@@ -2,7 +2,7 @@
 mod tests {
     use std::{fs, path::PathBuf};
 
-    use regex::Regex;
+    use fancy_regex::Regex;
     use serde::Deserialize;
 
     #[derive(Debug, Deserialize)]
@@ -29,7 +29,7 @@ mod tests {
             let mut matched = false;
             for pattern in &config.name_regexes {
                 let re = Regex::new(pattern).unwrap();
-                if re.is_match(&s) {
+                if re.is_match(&s).unwrap() {
                     matched = true;
                     println!("'{}' matched '{}'", s, pattern);
                     break;
@@ -46,7 +46,7 @@ mod tests {
             let mut matched = false;
             for pattern in &config.message_regexes {
                 let re = Regex::new(pattern).unwrap();
-                if re.is_match(&s) {
+                if re.is_match(&s).unwrap() {
                     matched = true;
                     println!("'{}' matched '{}'", s, pattern);
                     break;
