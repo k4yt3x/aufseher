@@ -1,10 +1,11 @@
-FROM rust:1.71.1-alpine3.18 as builder
+FROM rust:alpine as builder
 COPY . /app
 WORKDIR /app
 RUN apk add --no-cache --virtual .build-deps \
         make \
         musl-dev \
         openssl-dev \
+        openssl-libs-static \
         perl \
         pkgconfig \
     && cargo build --release --target x86_64-unknown-linux-musl
