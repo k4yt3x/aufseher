@@ -1,3 +1,6 @@
+mod aufseher;
+mod handlers;
+
 use std::{path::PathBuf, process};
 
 use anyhow::Result;
