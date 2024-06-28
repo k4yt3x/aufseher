@@ -2,6 +2,7 @@ mod actions;
 mod aufseher;
 mod handlers;
 mod matching;
+mod openai;
 
 use std::{path::PathBuf, process};
 
@@ -17,6 +18,10 @@ struct Args {
     #[arg(short = 't', long, env = "TELEGRAM_BOT_TOKEN", required = true)]
     token: String,
 
+    /// OpenAI API key
+    #[arg(short = 'o', long, env = "OPENAI_API_KEY")]
+    openai_api_key: Option<String>,
+
     /// Path to config file
     #[arg(short = 'c', long, default_value = "/etc/aufseher.yaml")]
     config_file: PathBuf,
@@ -24,7 +29,11 @@ struct Args {
 
 fn parse() -> Result<Config> {
     let args = Args::parse();
-    Ok(Config::new(args.token, args.config_file))
+    Ok(Config::new(
+        args.token,
+        args.openai_api_key,
+        args.config_file,
+    )?)
 }
 
 #[tokio::main]

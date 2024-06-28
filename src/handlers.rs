@@ -1,21 +1,20 @@
 use anyhow::Result;
-use fancy_regex::Regex;
 use teloxide::{
     prelude::*,
     types::{MediaKind, MessageKind, MessageNewChatMembers, UpdateKind, User},
 };
 use tracing::{info, warn};
 
-use crate::{actions, aufseher::AufseherConfig, matching};
+use crate::{actions, aufseher::Config, matching, openai};
 
-pub async fn handle_updates(bot: Bot, update: Update, config: &AufseherConfig) -> Result<()> {
+pub async fn handle_updates(bot: Bot, update: Update, config: &Config) -> Result<()> {
     if let UpdateKind::Message(message) = &update.kind {
         handle_messages(&bot, &message, config).await?;
     }
     Ok(())
 }
 
-async fn handle_messages(bot: &Bot, message: &Message, config: &AufseherConfig) -> Result<()> {
+async fn handle_messages(bot: &Bot, message: &Message, config: &Config) -> Result<()> {
     // get group chat title
     let chat_title = if let Some(title) = &message.chat.title() {
         title
@@ -31,7 +30,7 @@ async fn handle_messages(bot: &Bot, message: &Message, config: &AufseherConfig) 
             message,
             chat_title,
             message_new_chat_members,
-            &config.name_regexes,
+            &config,
         )
         .await?;
     }
@@ -55,23 +54,15 @@ async fn handle_messages(bot: &Bot, message: &Message, config: &AufseherConfig) 
 
             // handle the message/caption
             if let Some(message_text) = message_text {
-                handle_message_common_text(
-                    &bot,
-                    message,
-                    user,
-                    chat_title,
-                    message_text,
-                    &config.message_regexes,
-                )
-                .await?;
+                handle_message_common_text(&bot, message, user, chat_title, message_text, &config)
+                    .await?;
             }
         }
     }
 
     // handle sender/forwarder names
     if let Some(user) = &message.from() {
-        handle_message_user_names(&bot, message, chat_title, user, config.name_regexes.clone())
-            .await?;
+        handle_message_user_names(&bot, message, chat_title, user, config).await?;
     }
 
     Ok(())
@@ -82,10 +73,10 @@ async fn handle_message_user_names(
     message: &Message,
     chat_title: &str,
     user: &User,
-    name_regexes: Vec<Regex>,
+    config: &Config,
 ) -> Result<()> {
     // check if the username matches any of the regexes
-    if let Some(matched_regex) = matching::is_match(&user.full_name(), &name_regexes)? {
+    if let Some(matched_regex) = matching::is_match(&user.full_name(), &config.name_regexes)? {
         info!(
             "Username '{}' maches regex '{}'",
             user.full_name(),
@@ -96,7 +87,9 @@ async fn handle_message_user_names(
 
     // check if the message's forwarder username matches any of the regexes
     if let Some(forwarder) = &message.forward_from_user() {
-        if let Some(matched_regex) = matching::is_match(&forwarder.full_name(), &name_regexes)? {
+        if let Some(matched_regex) =
+            matching::is_match(&forwarder.full_name(), &config.name_regexes)?
+        {
             info!(
                 "Forwarder name '{}' maches regex '{}'",
                 forwarder.full_name(),
@@ -109,7 +102,7 @@ async fn handle_message_user_names(
     // check if the message's forwarder chat name matches any of the regexes
     if let Some(forwarder) = &message.forward_from_chat() {
         if let Some(title) = &forwarder.title() {
-            if let Some(matched_regex) = matching::is_match(&title, &name_regexes)? {
+            if let Some(matched_regex) = matching::is_match(&title, &config.name_regexes)? {
                 info!(
                     "Forwarder chat name '{}' maches regex '{}'",
                     title,
@@ -128,7 +121,7 @@ async fn handle_message_new_chat_members(
     message: &Message,
     chat_title: &str,
     message_new_chat_members: &MessageNewChatMembers,
-    name_regexes: &Vec<Regex>,
+    config: &Config,
 ) -> Result<()> {
     for member in &message_new_chat_members.new_chat_members {
         info!(
@@ -140,7 +133,8 @@ async fn handle_message_new_chat_members(
         );
 
         // check if the username matches any of the regexes
-        if let Some(matched_regex) = matching::is_match(&member.full_name(), name_regexes)? {
+        if let Some(matched_regex) = matching::is_match(&member.full_name(), &config.name_regexes)?
+        {
             info!(
                 "Username '{}' maches regex '{}'",
                 member.full_name(),
@@ -159,7 +153,7 @@ async fn handle_message_common_text(
     user: &User,
     chat_title: &str,
     message_text: &str,
-    message_regexes: &Vec<Regex>,
+    config: &Config,
 ) -> Result<()> {
     info!(
         "New message '{}' from '{}' ({}) in '{}' ({})",
@@ -171,7 +165,7 @@ async fn handle_message_common_text(
     );
 
     // check if the message text matches any of the regexes
-    if let Some(matched_regex) = matching::is_match(&message_text, message_regexes)? {
+    if let Some(matched_regex) = matching::is_match(&message_text, &config.message_regexes)? {
         info!(
             "Message text '{}' maches regex '{}'",
             message_text,
@@ -183,6 +177,24 @@ async fn handle_message_common_text(
     // respond to `/aufseher ping` command
     if message_text == "/aufseher ping" {
         actions::send_ping_response(bot, message).await?;
+    }
+
+    // if the OpenAI API key is provided, use GPT-4o to check if the message is spam
+    if let Some(openai_api_key) = &config.openai_api_key {
+        info!("Checking if message is spam using GPT-4o");
+        let openai_is_spam =
+            openai::openai_check_is_message_spam(&message_text, openai_api_key).await?;
+
+        if openai_is_spam {
+            info!("Message '{}' is recognized as spam by GPT-4o", message_text);
+            actions::delete_messages_and_ban_user(bot, message, user, chat_title).await?;
+        }
+        else {
+            info!(
+                "Message '{}' is recognized as NOT spam by GPT-4o",
+                message_text
+            );
+        }
     }
 
     Ok(())

@@ -9,7 +9,7 @@ license = "GPL-2.0-only"
 name = "aufseher"
 readme = "README.md"
 repository = "https://github.com/k4yt3x/aufseher"
-version = "1.5.0"
+version = "1.6.0"
 
 [[bin]]
 name = "aufseher"
@@ -25,7 +25,9 @@ strip = "symbols"
 anyhow = "1.0"
 clap = { version = "4.0", features = ["derive", "env"] }
 fancy-regex = "0.13"
+reqwest = { version = "0.12", features = ["blocking", "json"] }
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 serde_yaml = "0.9"
 teloxide = { version = "0.12", features = ["macros", "throttle"] }
 tokio = { version = "1.23", features = ["full"] }

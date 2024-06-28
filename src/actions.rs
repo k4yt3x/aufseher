@@ -12,6 +12,23 @@ pub async fn delete_messages_and_ban_user(
     user: &User,
     chat_title: &str,
 ) -> Result<()> {
+    // get the member status of the user
+    let member = bot
+        .get_chat_member(message.chat.id.clone(), user.id)
+        .send()
+        .await?;
+
+    // skip the ban if the user is an admin or creator
+    if member.is_administrator() || member.is_owner() {
+        warn!(
+            "User '{}' ({}) is an admin or creator in '{}'. Skipping ban.",
+            user.full_name(),
+            user.id,
+            chat_title,
+        );
+        return Ok(());
+    }
+
     bot.delete_message(message.chat.id.clone(), message.id.clone())
         .send()
         .await?;
