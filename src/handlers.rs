@@ -174,6 +174,18 @@ async fn handle_message_common_text(
         actions::delete_messages_and_ban_user(bot, message, user, chat_title).await?;
     }
 
+    // then check if the deobfuscated message text matches any of the regexes
+    if let Some(matched_regex) =
+        matching::is_match_obfuscated(&message_text, &config.message_regexes)?
+    {
+        info!(
+            "Deobfuscated message text of '{}' maches regex '{}'",
+            message_text,
+            matched_regex.as_str()
+        );
+        actions::delete_messages_and_ban_user(bot, message, user, chat_title).await?;
+    }
+
     // respond to `/aufseher ping` command
     if message_text == "/aufseher ping" {
         actions::send_ping_response(bot, message).await?;
