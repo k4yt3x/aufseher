@@ -3,7 +3,7 @@ use teloxide::{
     prelude::*,
     types::{MediaKind, MessageKind, MessageNewChatMembers, UpdateKind, User},
 };
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use crate::{actions, aufseher::Config, matching, openai};
 
@@ -43,13 +43,14 @@ async fn handle_messages(bot: &Bot, message: &Message, config: &Config) -> Resul
             if let MediaKind::Text(media_text) = &message_common.media_kind {
                 message_text = Some(&media_text.text);
             }
+            else if let Some(caption) = &message.caption() {
+                message_text = Some(&caption);
+            }
+            else if let MediaKind::Sticker(_) = &message_common.media_kind {
+                debug!("Sticker message ignored");
+            }
             else {
-                if let Some(caption) = &message.caption() {
-                    message_text = Some(&caption);
-                }
-                else {
-                    warn!("Unsupported media kind: {:?}", &message_common.media_kind);
-                }
+                warn!("Unsupported media kind: {:?}", &message_common.media_kind);
             }
 
             // handle the message/caption
@@ -173,9 +174,8 @@ async fn handle_message_common_text(
         );
         actions::delete_messages_and_ban_user(bot, message, user, chat_title).await?;
     }
-
     // then check if the deobfuscated message text matches any of the regexes
-    if let Some(matched_regex) =
+    else if let Some(matched_regex) =
         matching::is_match_obfuscated(&message_text, &config.message_regexes)?
     {
         info!(
