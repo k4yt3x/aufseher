@@ -26,7 +26,7 @@ pub fn is_match_obfuscated(
 
 fn deobfuscate_message_text(text: &str) -> Result<String, fancy_regex::Error> {
     // define patterns for spaces, invisible characters, and emojis
-    let space_pattern = r"[ \n\t\u{00A0}\u{180E}\u{200B}\u{200C}\u{200D}\u{2060}\u{FEFF}]";
+    let space_pattern = r"[ \n\t\u{00A0}\u{180E}\u{200B}\u{200C}\u{200D}\u{2060}\u{2062}\u{FEFF}]";
     let emoji_pattern = concat!(
         r"[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|",
         r"[\u{1F680}-\u{1F6FF}]|[\u{1F700}-\u{1F77F}]|",
@@ -51,4 +51,94 @@ fn deobfuscate_message_text(text: &str) -> Result<String, fancy_regex::Error> {
     let text = non_text_re.replace_all(&text, "");
 
     Ok(text.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{fs, path::PathBuf};
+
+    use fancy_regex::Regex;
+    use serde::Deserialize;
+
+    use crate::matching;
+
+    #[derive(Debug, Deserialize)]
+    struct Tests {
+        usernames: Vec<String>,
+        messages: Vec<String>,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct AufseherConfig {
+        name_regexes: Vec<String>,
+        message_regexes: Vec<String>,
+        tests: Tests,
+    }
+
+    #[test]
+    fn test_regexes() {
+        let mut config_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        config_path.push("configs/aufseher.yaml");
+        let file_contents = fs::read_to_string(config_path).unwrap();
+        let config: AufseherConfig = serde_yaml::from_str(&file_contents).unwrap();
+
+        let name_regexes: Vec<Regex> = config
+            .name_regexes
+            .iter()
+            .try_fold(Vec::new(), |mut acc, r| {
+                acc.push(Regex::new(r)?);
+                Ok::<_, fancy_regex::Error>(acc)
+            })
+            .unwrap();
+
+        let message_regexes: Vec<Regex> = config
+            .message_regexes
+            .iter()
+            .try_fold(Vec::new(), |mut acc, r| {
+                acc.push(Regex::new(r)?);
+                Ok::<_, fancy_regex::Error>(acc)
+            })
+            .unwrap();
+
+        for username in config.tests.usernames {
+            let mut matched = matching::is_match(&username, &name_regexes).unwrap();
+
+            if let Some(pattern) = matched.as_ref() {
+                println!(
+                    "Username '{}' matched pattern '{}'",
+                    username,
+                    pattern.as_str()
+                );
+            }
+            else {
+                matched = matching::is_match_obfuscated(&username, &name_regexes).unwrap();
+            }
+
+            assert!(
+                matched.is_some(),
+                "Username '{}' did not match any of the provided patterns",
+                username
+            );
+        }
+
+        for message in config.tests.messages {
+            let matched = matching::is_match(&message, &message_regexes)
+                .unwrap()
+                .or_else(|| matching::is_match_obfuscated(&message, &message_regexes).unwrap());
+
+            if let Some(pattern) = matched.as_ref() {
+                println!(
+                    "Message '{}' matched pattern '{}'",
+                    message,
+                    pattern.as_str()
+                );
+            }
+
+            assert!(
+                matched.is_some(),
+                "Message '{}' did not match any of the provided patterns",
+                message
+            );
+        }
+    }
 }
