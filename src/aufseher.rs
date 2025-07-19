@@ -77,10 +77,17 @@ pub async fn run(config: Config) -> Result<()> {
     let bot = Bot::new(&config.token);
 
     // initialize the dispatcher
-    let handler = dptree::entry().branch(
-        Update::filter_message()
-            .endpoint(move |bot, update| handle_wrapper(bot, update, config.clone())),
-    );
+    let config_messages = config.clone();
+    let config_edited = config.clone();
+    let handler = dptree::entry()
+        .branch(
+            Update::filter_message()
+                .endpoint(move |bot, update| handle_wrapper(bot, update, config_messages.clone())),
+        )
+        .branch(
+            Update::filter_edited_message()
+                .endpoint(move |bot, update| handle_wrapper(bot, update, config_edited.clone())),
+        );
 
     // start the dispatcher
     info!("Initialization complete, starting to handle updates");

@@ -8,8 +8,14 @@ use tracing::{debug, info, warn};
 use crate::{actions, aufseher::Config, matching, openai};
 
 pub async fn handle_updates(bot: Bot, update: Update, config: &Config) -> Result<()> {
-    if let UpdateKind::Message(message) = &update.kind {
-        handle_messages(&bot, &message, config).await?;
+    match &update.kind {
+        UpdateKind::Message(message) => {
+            handle_messages(&bot, &message, config).await?;
+        }
+        UpdateKind::EditedMessage(message) => {
+            handle_messages(&bot, &message, config).await?;
+        }
+        _ => {} // Ignore other update types
     }
     Ok(())
 }
