@@ -33,7 +33,7 @@ impl Config {
         let file_contents = fs::read_to_string(&config_file)?;
         let regex_config: AufseherConfigFile = serde_yaml::from_str(&file_contents)?;
 
-        // load user name regexes
+        // Load user name regexes
         let name_regexes: Vec<Regex> =
             regex_config
                 .name_regexes
@@ -43,7 +43,7 @@ impl Config {
                     Ok::<_, fancy_regex::Error>(acc)
                 })?;
 
-        // load message regexes
+        // Load message regexes
         let message_regexes: Vec<Regex> =
             regex_config
                 .message_regexes
@@ -73,10 +73,10 @@ async fn handle_wrapper(bot: Bot, update: Update, config: Config) -> Result<()> 
 pub async fn run(config: Config) -> Result<()> {
     info!("Aufseher {version} initializing", version = VERSION);
 
-    // initialize the bot with token
+    // Initialize the bot with token
     let bot = Bot::new(&config.token);
 
-    // initialize the dispatcher
+    // Initialize the dispatcher
     let config_messages = config.clone();
     let config_edited = config.clone();
     let handler = dptree::entry()
@@ -89,7 +89,7 @@ pub async fn run(config: Config) -> Result<()> {
                 .endpoint(move |bot, update| handle_wrapper(bot, update, config_edited.clone())),
         );
 
-    // start the dispatcher
+    // Start the dispatcher
     info!("Initialization complete, starting to handle updates");
     Dispatcher::builder(bot, handler)
         .enable_ctrlc_handler()

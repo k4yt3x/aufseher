@@ -87,10 +87,10 @@ async fn openai_complete_single_message(message: &str, openai_api_key: &str) -> 
             ]
         }));
 
-    // send the request and parse the response
+    // Send the request and parse the response
     let response = request.send().await?;
 
-    // check if the response is successful
+    // Check if the response is successful
     if !response.status().is_success() {
         return Err(anyhow::anyhow!(
             "OpenAI request failed: {}",
@@ -98,10 +98,10 @@ async fn openai_complete_single_message(message: &str, openai_api_key: &str) -> 
         ));
     }
 
-    // parse the response
+    // Parse the response
     let completion: OpenAICompletionsResponse = response.json().await?;
 
-    // check if the response has at least one choice
+    // Check if the response has at least one choice
     if completion.choices.is_empty() {
         return Err(anyhow::anyhow!("OpenAI response has no choices"));
     }

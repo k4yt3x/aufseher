@@ -12,13 +12,13 @@ pub async fn delete_messages_and_ban_user(
     user: &User,
     chat_title: &str,
 ) -> Result<()> {
-    // get the member status of the user
+    // Get the member status of the user
     let member = bot
         .get_chat_member(message.chat.id.clone(), user.id)
         .send()
         .await?;
 
-    // skip the ban if the user is an admin or creator
+    // Skip the ban if the user is an admin or creator
     if member.is_administrator() || member.is_owner() {
         warn!(
             "User '{}' ({}) is an admin or creator in '{}'. Skipping ban.",
@@ -65,10 +65,10 @@ pub async fn send_ping_response(bot: &Bot, message: &Message) -> Result<()> {
         .send()
         .await?;
 
-    // sleep for 1 second
+    // Sleep for 1 second
     time::sleep(Duration::from_secs(1)).await;
 
-    // delete the ping message and the pong message
+    // Delete the ping message and the pong message
     bot.delete_message(message.chat.id.clone(), message.id.clone())
         .send()
         .await?;

@@ -13,7 +13,7 @@ pub fn is_match_obfuscated(
     input: &str,
     regexes: &Vec<Regex>,
 ) -> Result<Option<Regex>, fancy_regex::Error> {
-    // deobfuscate the message text
+    // Deobfuscate the message text
     let input = deobfuscate_message_text(input)?;
 
     for regex in regexes {
@@ -25,7 +25,7 @@ pub fn is_match_obfuscated(
 }
 
 fn deobfuscate_message_text(text: &str) -> Result<String, fancy_regex::Error> {
-    // define patterns for spaces, invisible characters, and emojis
+    // Define patterns for spaces, invisible characters, and emojis
     let space_pattern = r"[ \n\t\u{00A0}\u{180E}\u{200B}\u{200C}\u{200D}\u{2060}\u{2062}\u{FEFF}]";
     let emoji_pattern = concat!(
         r"[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|",
@@ -40,12 +40,12 @@ fn deobfuscate_message_text(text: &str) -> Result<String, fancy_regex::Error> {
     );
     let non_text_pattern = r"[^\p{L}\p{N}\p{P}\p{Z}]";
 
-    // create regex objects
+    // Create regex objects
     let space_re = Regex::new(space_pattern)?;
     let emoji_re = Regex::new(emoji_pattern)?;
     let non_text_re = Regex::new(non_text_pattern)?;
 
-    // remove spaces, invisible characters, and emojis
+    // Remove spaces, invisible characters, and emojis
     let text = space_re.replace_all(text, "");
     let text = emoji_re.replace_all(&text, "");
     let text = non_text_re.replace_all(&text, "");
