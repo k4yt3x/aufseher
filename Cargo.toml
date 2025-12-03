@@ -1,15 +1,15 @@
 [package]
-authors = ["i@k4yt3x.com"]
-categories = ["command-line-utilities"]
-description = "A simple regex-based Telegram anti-spam bot"
-edition = "2021"
-homepage = "https://github.com/k4yt3x/aufseher"
-keywords = ["telegram"]
-license = "GPL-2.0-only"
 name = "aufseher"
-readme = "README.md"
-repository = "https://github.com/k4yt3x/aufseher"
 version = "1.8.0"
+authors = ["i@k4yt3x.com"]
+edition = "2024"
+description = "A simple regex-based Telegram anti-spam bot"
+readme = "README.md"
+homepage = "https://github.com/k4yt3x/aufseher"
+repository = "https://github.com/k4yt3x/aufseher"
+license = "GPL-2.0-only"
+keywords = ["telegram"]
+categories = ["command-line-utilities"]
 
 [[bin]]
 name = "aufseher"
