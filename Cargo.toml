@@ -1,6 +1,6 @@
 [package]
 name = "aufseher"
-version = "1.8.0"
+version = "1.8.1"
 authors = ["i@k4yt3x.com"]
 edition = "2024"
 description = "A simple regex-based Telegram anti-spam bot"

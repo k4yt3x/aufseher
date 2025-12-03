@@ -46,6 +46,7 @@ pub async fn delete_messages_and_ban_user(
         ),
     )
     .parse_mode(teloxide::types::ParseMode::MarkdownV2)
+    .disable_notification(true)
     .await?;
     warn!(
         "User '{}' ({}) has been banned from '{}' ({})",
