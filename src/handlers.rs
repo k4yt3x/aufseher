@@ -42,7 +42,7 @@ async fn handle_messages(bot: &Bot, message: &Message, config: &Config) -> Resul
     }
     // Handle common messages
     else if let MessageKind::Common(message_common) = &message.kind {
-        if let Some(user) = &message_common.from {
+        if let Some(user) = &message.from {
             let mut message_text: Option<&str> = None;
 
             // Get message text from different media kinds
@@ -89,7 +89,7 @@ async fn handle_messages(bot: &Bot, message: &Message, config: &Config) -> Resul
     }
 
     // Handle sender/forwarder names
-    if let Some(user) = &message.from() {
+    if let Some(user) = &message.from {
         handle_message_user_names(&bot, message, chat_title, user, config).await?;
     }
 

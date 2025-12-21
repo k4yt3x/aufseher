@@ -1,6 +1,6 @@
 [package]
 name = "aufseher"
-version = "1.8.1"
+version = "1.9.0"
 authors = ["i@k4yt3x.com"]
 edition = "2024"
 description = "A simple regex-based Telegram anti-spam bot"
@@ -25,13 +25,13 @@ codegen-units = 1
 
 [dependencies]
 anyhow = "1.0"
-clap = { version = "4.0", features = ["derive", "env"] }
-fancy-regex = "0.13"
+clap = { version = "4.5", features = ["derive", "env"] }
+fancy-regex = "0.17"
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml = "0.9"
-teloxide = { version = "0.12", features = ["macros", "throttle"] }
-tokio = { version = "1.23", features = ["full"] }
+teloxide = { version = "0.17", features = ["macros", "throttle"] }
+tokio = { version = "1.48", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"

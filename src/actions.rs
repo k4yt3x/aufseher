@@ -1,7 +1,7 @@
 use anyhow::Result;
 use teloxide::{
     prelude::*,
-    types::{Message, User},
+    types::{Message, ReplyParameters, User},
 };
 use tokio::{time, time::Duration};
 use tracing::warn;
@@ -62,7 +62,7 @@ pub async fn delete_messages_and_ban_user(
 pub async fn send_ping_response(bot: &Bot, message: &Message) -> Result<()> {
     let pong_message = bot
         .send_message(message.chat.id.clone(), "pong!")
-        .reply_to_message_id(message.id)
+        .reply_parameters(ReplyParameters::new(message.id))
         .send()
         .await?;
 
