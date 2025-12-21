@@ -141,6 +141,19 @@ async fn handle_message_user_names(
         }
     }
 
+    // Check if the message's via_bot username matches any of the regexes
+    if let Some(via_bot) = &message.via_bot {
+        if let Some(matched_regex) = matching::is_match(&via_bot.full_name(), &config.name_regexes)?
+        {
+            info!(
+                "Via bot name '{}' maches regex '{}'",
+                via_bot.full_name(),
+                matched_regex.as_str()
+            );
+            actions::delete_messages_and_ban_user(bot, message, user, chat_title).await?;
+        }
+    }
+
     Ok(())
 }
 
