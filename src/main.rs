@@ -1,5 +1,5 @@
 mod actions;
-mod aufseher;
+mod config;
 mod handlers;
 mod matching;
 mod openai;
@@ -7,9 +7,12 @@ mod openai;
 use std::{path::PathBuf, process};
 
 use anyhow::Result;
-use aufseher::{run, Config};
 use clap::Parser;
-use tracing::{error, Level};
+use config::Config;
+use teloxide::prelude::*;
+use tracing::{Level, error, info};
+
+pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -34,6 +37,44 @@ fn parse() -> Result<Config> {
         args.openai_api_key,
         args.config_file,
     )?)
+}
+
+async fn handle_wrapper(bot: Bot, update: Update, config: Config) -> Result<()> {
+    if let Err(error) = handlers::handle_updates(bot, update, &config).await {
+        error!("{}", error);
+    }
+
+    Ok(())
+}
+
+pub async fn run(config: Config) -> Result<()> {
+    info!("Aufseher {version} initializing", version = VERSION);
+
+    // Initialize the bot with token
+    let bot = Bot::new(&config.telegram_bot_token);
+
+    // Initialize the dispatcher
+    let config_messages = config.clone();
+    let config_edited = config.clone();
+    let handler = dptree::entry()
+        .branch(
+            Update::filter_message()
+                .endpoint(move |bot, update| handle_wrapper(bot, update, config_messages.clone())),
+        )
+        .branch(
+            Update::filter_edited_message()
+                .endpoint(move |bot, update| handle_wrapper(bot, update, config_edited.clone())),
+        );
+
+    // Start the dispatcher
+    info!("Initialization complete, starting to handle updates");
+    Dispatcher::builder(bot, handler)
+        .enable_ctrlc_handler()
+        .build()
+        .dispatch()
+        .await;
+
+    Ok(())
 }
 
 #[tokio::main]

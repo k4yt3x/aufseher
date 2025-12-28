@@ -3,12 +3,6 @@ use std::{fs, path::PathBuf};
 use anyhow::Result;
 use fancy_regex::Regex;
 use serde::Deserialize;
-use teloxide::prelude::*;
-use tracing::{error, info};
-
-use crate::handlers;
-
-pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct AufseherConfigFile {
@@ -18,7 +12,7 @@ pub struct AufseherConfigFile {
 
 #[derive(Clone)]
 pub struct Config {
-    pub token: String,
+    pub telegram_bot_token: String,
     pub openai_api_key: Option<String>,
     pub name_regexes: Vec<Regex>,
     pub message_regexes: Vec<Regex>,
@@ -54,48 +48,10 @@ impl Config {
                 })?;
 
         Ok(Config {
-            token,
+            telegram_bot_token: token,
             openai_api_key,
             name_regexes,
             message_regexes,
         })
     }
-}
-
-async fn handle_wrapper(bot: Bot, update: Update, config: Config) -> Result<()> {
-    if let Err(error) = handlers::handle_updates(bot, update, &config).await {
-        error!("{}", error);
-    }
-
-    Ok(())
-}
-
-pub async fn run(config: Config) -> Result<()> {
-    info!("Aufseher {version} initializing", version = VERSION);
-
-    // Initialize the bot with token
-    let bot = Bot::new(&config.token);
-
-    // Initialize the dispatcher
-    let config_messages = config.clone();
-    let config_edited = config.clone();
-    let handler = dptree::entry()
-        .branch(
-            Update::filter_message()
-                .endpoint(move |bot, update| handle_wrapper(bot, update, config_messages.clone())),
-        )
-        .branch(
-            Update::filter_edited_message()
-                .endpoint(move |bot, update| handle_wrapper(bot, update, config_edited.clone())),
-        );
-
-    // Start the dispatcher
-    info!("Initialization complete, starting to handle updates");
-    Dispatcher::builder(bot, handler)
-        .enable_ctrlc_handler()
-        .build()
-        .dispatch()
-        .await;
-
-    Ok(())
 }

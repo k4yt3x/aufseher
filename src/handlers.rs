@@ -5,7 +5,7 @@ use teloxide::{
 };
 use tracing::{debug, info, warn};
 
-use crate::{actions, aufseher::Config, matching, openai};
+use crate::{actions, config::Config, matching, openai};
 
 pub async fn handle_updates(bot: Bot, update: Update, config: &Config) -> Result<()> {
     match &update.kind {
