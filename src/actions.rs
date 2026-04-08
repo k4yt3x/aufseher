@@ -2,6 +2,7 @@ use anyhow::Result;
 use teloxide::{
     prelude::*,
     types::{Message, ReplyParameters, User},
+    utils::markdown::escape,
 };
 use tokio::{time, time::Duration};
 use tracing::warn;
@@ -39,10 +40,9 @@ pub async fn delete_messages_and_ban_user(
     bot.send_message(
         message.chat.id.clone(),
         format!(
-            "User [{} \\({}\\)](tg://user?id\\={}) has been banned\\.",
-            user.full_name(),
+            "User {} \\(||{}||\\) has been banned\\.",
             user.id,
-            user.id
+            escape(&user.full_name())
         ),
     )
     .parse_mode(teloxide::types::ParseMode::MarkdownV2)
