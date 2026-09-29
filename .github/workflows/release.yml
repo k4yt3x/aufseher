@@ -15,6 +15,7 @@ jobs:
 
     env:
       ARTIFACT: aufseher-linux-amd64
+      DOCKER_BUILD_RECORD_UPLOAD: false
 
     steps:
       - name: Checkout
@@ -89,6 +90,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
+          pattern: aufseher-linux-*
           path: artifacts
           merge-multiple: true
 
