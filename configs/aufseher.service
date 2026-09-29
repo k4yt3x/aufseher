@@ -1,12 +1,51 @@
 [Unit]
-Description=Aufseher
-Requires=network.target
+Description=Aufseher Telegram anti-spam bot
+Documentation=https://github.com/k4yt3x/aufseher
+Wants=network-online.target
+After=network-online.target
 
 [Service]
-Type=simple
-Restart=on-failure
-User=nobody
+Type=exec
 ExecStart=/usr/local/bin/aufseher -c /etc/aufseher.yaml
+EnvironmentFile=-/etc/aufseher.env
+Restart=on-failure
+RestartSec=5s
+
+DynamicUser=yes
+CapabilityBoundingSet=
+NoNewPrivileges=yes
+RestrictSUIDSGID=yes
+
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+UMask=0077
+
+PrivateUsers=yes
+PrivateIPC=yes
+RemoveIPC=yes
+ProtectProc=invisible
+ProcSubset=pid
+
+ProtectClock=yes
+ProtectControlGroups=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+SystemCallErrorNumber=EPERM
 
 [Install]
 WantedBy=multi-user.target

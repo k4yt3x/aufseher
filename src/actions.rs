@@ -1,81 +1,120 @@
+//! Telegram operations the bot performs on a chat.
+
+use std::{fmt, time::Duration};
+
 use anyhow::Result;
 use teloxide::{
     prelude::*,
-    types::{Message, ReplyParameters, User},
+    types::{Chat, ParseMode, ReplyParameters, UserId},
     utils::markdown::escape,
 };
-use tokio::{time, time::Duration};
 use tracing::warn;
 
-pub async fn delete_messages_and_ban_user(
-    bot: &Bot,
-    message: &Message,
-    user: &User,
-    chat_title: &str,
-) -> Result<()> {
-    // Get the member status of the user
-    let member = bot
-        .get_chat_member(message.chat.id.clone(), user.id)
-        .send()
-        .await?;
+use crate::detection::Offender;
 
-    // Skip the ban if the user is an admin or creator
-    if member.is_administrator() || member.is_owner() {
-        warn!(
-            "User '{}' ({}) is an admin or creator in '{}'. Skipping ban.",
-            user.full_name(),
-            user.id,
-            chat_title,
-        );
-        return Ok(());
+/// How long the ping reply stays up before the bot deletes it along with the command.
+const PING_REPLY_LIFETIME: Duration = Duration::from_secs(1);
+
+/// Why an offender is spared the ban.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Exemption {
+    /// The offender is this bot, which cannot ban itself.
+    ThisBot,
+    /// The user administers the chat.
+    Administrator,
+    /// The message was sent on behalf of the chat itself, which only its administrators can do.
+    AnonymousAdministrator,
+    /// The message was sent on behalf of the chat's linked channel, as its posts are when Telegram
+    /// forwards them into its discussion group.
+    LinkedChannel,
+}
+
+impl fmt::Display for Exemption {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(match self {
+            Self::ThisBot => "is this bot",
+            Self::Administrator => "is an administrator",
+            Self::AnonymousAdministrator => "is an anonymous administrator",
+            Self::LinkedChannel => "is the linked channel",
+        })
     }
+}
 
-    bot.delete_message(message.chat.id.clone(), message.id.clone())
-        .send()
-        .await?;
-    bot.ban_chat_member(message.chat.id.clone(), user.id)
-        .revoke_messages(true)
-        .send()
-        .await?;
-    bot.send_message(
-        message.chat.id.clone(),
-        format!(
-            "User {} \\(||{}||\\) has been banned\\.",
-            user.id,
-            escape(&user.full_name())
-        ),
-    )
-    .parse_mode(teloxide::types::ParseMode::MarkdownV2)
-    .disable_notification(true)
-    .await?;
-    warn!(
-        "User '{}' ({}) has been banned from '{}' ({})",
-        user.full_name(),
-        user.id,
-        chat_title,
-        &message.chat.id
-    );
+/// Returns why `offender` is exempt from bans in `chat`, if they are. `this_bot` is the bot's own
+/// user ID.
+pub(crate) async fn exemption(
+    bot: &Bot,
+    chat: &Chat,
+    offender: Offender<'_>,
+    this_bot: UserId,
+) -> Result<Option<Exemption>> {
+    match offender {
+        Offender::User(user) if user.id == this_bot => Ok(Some(Exemption::ThisBot)),
+        Offender::User(user) => {
+            let member = bot.get_chat_member(chat.id, user.id).await?;
+            Ok(member.is_privileged().then_some(Exemption::Administrator))
+        }
+        Offender::SenderChat(sender) if sender.id == chat.id => {
+            Ok(Some(Exemption::AnonymousAdministrator))
+        }
+        Offender::SenderChat(sender) => {
+            let linked = bot.get_chat(chat.id).await?.linked_chat_id();
+            Ok((linked == Some(sender.id.0)).then_some(Exemption::LinkedChannel))
+        }
+    }
+}
 
+/// Bans `offender` from `chat` and posts a silent notice with their name behind a spoiler. A user's
+/// messages are revoked; a sender chat's owner can no longer post on behalf of any of their
+/// channels. A failed notice is logged rather than returned, since the ban has already happened.
+pub(crate) async fn ban(bot: &Bot, chat: ChatId, offender: Offender<'_>) -> Result<()> {
+    let kind = match offender {
+        Offender::User(user) => {
+            bot.ban_chat_member(chat, user.id)
+                .revoke_messages(true)
+                .await?;
+            "User"
+        }
+        Offender::SenderChat(sender) => {
+            bot.ban_chat_sender_chat(chat, sender.id).await?;
+            "Channel"
+        }
+    };
+    let notice = bot
+        .send_message(
+            chat,
+            format!(
+                r"{kind} {} \(||{}||\) has been banned\.",
+                escape(&offender.id().to_string()),
+                escape(&offender.name())
+            ),
+        )
+        .parse_mode(ParseMode::MarkdownV2)
+        .disable_notification(true)
+        .await;
+    if let Err(error) = notice {
+        warn!("Failed to post the ban notice in chat {chat}: {error}");
+    }
     Ok(())
 }
 
-pub async fn send_ping_response(bot: &Bot, message: &Message) -> Result<()> {
-    let pong_message = bot
-        .send_message(message.chat.id.clone(), "pong!")
+/// Replies "pong!" to `message`, then deletes both after [`PING_REPLY_LIFETIME`]. The deletion runs
+/// on its own task, since the chat's next update waits for this one to finish.
+pub(crate) async fn answer_ping(bot: &Bot, message: &Message) -> Result<()> {
+    let reply = bot
+        .send_message(message.chat.id, "pong!")
         .reply_parameters(ReplyParameters::new(message.id))
-        .send()
         .await?;
-
-    // Sleep for 1 second
-    time::sleep(Duration::from_secs(1)).await;
-
-    // Delete the ping message and the pong message
-    bot.delete_message(message.chat.id.clone(), message.id.clone())
-        .send()
-        .await?;
-    bot.delete_message(message.chat.id.clone(), pong_message.id.clone())
-        .send()
-        .await?;
-
+    tokio::spawn({
+        let bot = bot.clone();
+        let chat = message.chat.id;
+        let exchange = [message.id, reply.id];
+        async move {
+            tokio::time::sleep(PING_REPLY_LIFETIME).await;
+            if let Err(error) = bot.delete_messages(chat, exchange).await {
+                warn!("Failed to delete the ping exchange in chat {chat}: {error}");
+            }
+        }
+    });
     Ok(())
 }

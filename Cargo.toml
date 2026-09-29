@@ -1,19 +1,36 @@
 [package]
 name = "aufseher"
-version = "1.9.3"
+version = "2.0.0"
 authors = ["i@k4yt3x.com"]
 edition = "2024"
+rust-version = "1.88"
 description = "A simple regex-based Telegram anti-spam bot"
 readme = "README.md"
 homepage = "https://github.com/k4yt3x/aufseher"
 repository = "https://github.com/k4yt3x/aufseher"
-license = "GPL-2.0-only"
+license = "ISC"
 keywords = ["telegram"]
 categories = ["command-line-utilities"]
 
 [[bin]]
 name = "aufseher"
 path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4.6", features = ["derive", "env"] }
+fancy-regex = "0.18"
+notify = "8"
+serde = { version = "1.0", features = ["derive"] }
+serde_norway = "0.9"
+teloxide = { version = "0.17", default-features = false, features = ["ctrlc_handler", "rustls"] }
+tokio = { version = "1.52", features = ["macros", "rt-multi-thread", "sync", "time"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+serde_json = "1.0"
+tempfile = "3"
 
 [profile.dev]
 opt-level = 3
@@ -23,15 +40,16 @@ strip = "symbols"
 lto = "fat"
 codegen-units = 1
 
-[dependencies]
-anyhow = "1.0"
-clap = { version = "4.6", features = ["derive", "env"] }
-fancy-regex = "0.18"
-reqwest = { version = "0.13", features = ["blocking", "json"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-serde_yaml = "0.9"
-teloxide = { version = "0.17", default-features = false, features = ["macros", "throttle", "ctrlc_handler", "rustls"] }
-tokio = { version = "1.52", features = ["full"] }
-tracing = "0.1"
-tracing-subscriber = "0.3"
+[lints.rust]
+unreachable_pub = "warn"
+
+[lints.clippy]
+expect_used = "warn"
+indexing_slicing = "warn"
+match_wildcard_for_single_variants = "warn"
+panic = "warn"
+redundant_clone = "warn"
+uninlined_format_args = "warn"
+unreachable = "warn"
+unused_async = "warn"
+unwrap_used = "warn"
