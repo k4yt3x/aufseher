@@ -5,8 +5,7 @@ use std::{fmt, time::Duration};
 use anyhow::Result;
 use teloxide::{
     prelude::*,
-    types::{Chat, ParseMode, ReplyParameters, UserId},
-    utils::markdown::escape,
+    types::{Chat, ReplyParameters, UserId},
 };
 use tracing::warn;
 
@@ -64,36 +63,19 @@ pub(crate) async fn exemption(
     }
 }
 
-/// Bans `offender` from `chat` and posts a silent notice with their name behind a spoiler. A user's
-/// messages are revoked; a sender chat's owner can no longer post on behalf of any of their
-/// channels. A failed notice is logged rather than returned, since the ban has already happened.
+/// Bans `offender` from `chat` without posting anything, so that the group sees no trace of the
+/// spam. A user's messages are revoked; a sender chat's owner can no longer post on behalf of any
+/// of their channels.
 pub(crate) async fn ban(bot: &Bot, chat: ChatId, offender: Offender<'_>) -> Result<()> {
-    let kind = match offender {
+    match offender {
         Offender::User(user) => {
             bot.ban_chat_member(chat, user.id)
                 .revoke_messages(true)
                 .await?;
-            "User"
         }
         Offender::SenderChat(sender) => {
             bot.ban_chat_sender_chat(chat, sender.id).await?;
-            "Channel"
         }
-    };
-    let notice = bot
-        .send_message(
-            chat,
-            format!(
-                r"{kind} {} \(||{}||\) has been banned\.",
-                escape(&offender.id().to_string()),
-                escape(&offender.name())
-            ),
-        )
-        .parse_mode(ParseMode::MarkdownV2)
-        .disable_notification(true)
-        .await;
-    if let Err(error) = notice {
-        warn!("Failed to post the ban notice in chat {chat}: {error}");
     }
     Ok(())
 }

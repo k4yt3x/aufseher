@@ -61,14 +61,6 @@ impl Offender<'_> {
             Self::SenderChat(chat) => chat.id,
         }
     }
-
-    /// Returns the user's full name or the chat's title.
-    pub(crate) fn name(self) -> String {
-        match self {
-            Self::User(user) => user.full_name(),
-            Self::SenderChat(chat) => chat.title().unwrap_or_default().to_owned(),
-        }
-    }
 }
 
 /// An offender to ban, and the match that condemns them.
