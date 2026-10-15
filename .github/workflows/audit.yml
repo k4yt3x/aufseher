@@ -1,14 +1,10 @@
 name: Security audit
 
 on:
-  schedule:
-    - cron: "0 6 * * *"
+  # Every push, not only lockfile changes: advisories are published against versions already locked.
   push:
     branches:
       - master
-    paths:
-      - "Cargo.lock"
-      - ".github/workflows/audit.yml"
   pull_request:
     paths:
       - "Cargo.lock"
